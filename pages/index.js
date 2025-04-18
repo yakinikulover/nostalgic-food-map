@@ -23,7 +23,13 @@ export default function Home() {
 
   if (session) {
     return (
-      <main style={{display:'flex',height:'100vh',alignItems:'center',justifyContent:'center',flexDirection:'column'}}>
+      <main style={{
+        display:'flex',
+        height:'100vh',
+        alignItems:'center',
+        justifyContent:'center',
+        flexDirection:'column'
+      }}>
         <h1>ようこそ、{session.user.email} さん！</h1>
       </main>
     )
@@ -34,11 +40,22 @@ export default function Home() {
   }
 
   return (
-    <main style={{display:'flex',height:'100vh',alignItems:'center',justifyContent:'center',flexDirection:'column'}}>
+    <main style={{
+      display:'flex',
+      height:'100vh',
+      alignItems:'center',
+      justifyContent:'center',
+      flexDirection:'column'
+    }}>
       <h1>Nostalgic Food Map</h1>
       <button
         onClick={handleLogin}
-        style={{padding:'8px 16px',borderRadius:4,background:'#000',color:'#fff'}}
+        style={{
+          padding:'8px 16px',
+          borderRadius:4,
+          background:'#000',
+          color:'#fff'
+        }}
       >
         GitHub でログイン
       </button>
