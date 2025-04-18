@@ -15,21 +15,23 @@ export default function PostDetail() {
 
   useEffect(() => {
     if (!id) return
-    supabase
-      .from('posts')
-      .select(`
-        id,
-        title,
-        body,
-        created_at,
-        post_images(image_url)
-      `)
-      .eq('id', id)
-      .single()
-      .then(({ data, error }) => {
-        if (error) console.error(error)
-        else setPost(data)
-      })
+    const fetchPost = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('posts')
+          // author:users!author_id(...) は外しています
+          .select('id, title, body, created_at, post_images(image_url)')
+          .eq('id', id)
+          .single()
+        if (error) throw error
+        setPost(data)
+      } catch (e) {
+        console.error(e)
+        // ここで何が起きているかユーザにも見せる
+        alert(`Error fetching post:\n${e.message}`)
+      }
+    }
+    fetchPost()
   }, [id])
 
   if (!post) return <p>読み込み中…</p>
@@ -41,7 +43,7 @@ export default function PostDetail() {
       <p style={{ fontSize: 12, color: '#666' }}>
         {new Date(post.created_at).toLocaleDateString()}
       </p>
-      {post.post_images.map(img => (
+      {post.post_images.map((img) => (
         <img
           key={img.image_url}
           src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/post-images/${img.image_url}`}
