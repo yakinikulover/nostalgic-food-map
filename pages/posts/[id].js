@@ -22,8 +22,7 @@ export default function PostDetail() {
         title,
         body,
         created_at,
-        post_images(image_url),
-        author:users!author_id(username:email)
+        post_images(image_url)
       `)
       .eq('id', id)
       .single()
@@ -37,14 +36,12 @@ export default function PostDetail() {
 
   return (
     <main style={{ padding: 20, maxWidth: 600, margin: 'auto' }}>
-      <Link href="/">
-        ← 一覧へ戻る
-      </Link>
+      <Link href="/">← 一覧へ戻る</Link>
       <h1 style={{ marginTop: 20 }}>{post.title}</h1>
-      <p style={{ color: '#666', fontSize: 12 }}>
-        {new Date(post.created_at).toLocaleDateString()} by {post.author.username}
+      <p style={{ fontSize: 12, color: '#666' }}>
+        {new Date(post.created_at).toLocaleDateString()}
       </p>
-      {post.post_images.map((img) => (
+      {post.post_images.map(img => (
         <img
           key={img.image_url}
           src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/post-images/${img.image_url}`}
