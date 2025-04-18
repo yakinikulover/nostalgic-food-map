@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -73,7 +74,19 @@ export default function Home() {
                 alt=""
                 style={{ width: '100%', height: 160, objectFit: 'cover' }}
               />
-              <h2 style={{ fontSize: 18, margin: '8px' }}>{post.title}</h2>
+              {/* タイトルをクリックで詳細ページへ */}
+              <Link href={`/posts/${post.id}`}>
+                <h2
+                  style={{
+                    fontSize: 18,
+                    margin: '8px',
+                    cursor: 'pointer',
+                    color: '#0070f3',
+                  }}
+                >
+                  {post.title}
+                </h2>
+              </Link>
               <p
                 style={{
                   fontSize: 12,
