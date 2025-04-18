@@ -9,13 +9,13 @@ const supabase = createClient(
 
 export default function Home() {
   // ログインセッションを保持
-  const [session, setSession]     = useState(null)
+  const [session, setSession]       = useState(null)
   // 投稿一覧を保持
-  const [posts, setPosts]         = useState([])
+  const [posts, setPosts]           = useState([])
   // 検索キーワード
   const [searchTerm, setSearchTerm] = useState('')
   // false=降順, true=昇順
-  const [sortAsc, setSortAsc]     = useState(false)
+  const [sortAsc, setSortAsc]       = useState(false)
 
   // 認証状態の取得＆監視
   useEffect(() => {
@@ -33,7 +33,9 @@ export default function Home() {
     supabase
       .from('posts')
       .select('id, title, created_at, post_images(image_url)')
-      .then(({ data, error }) => !error && setPosts(data))
+      .then(({ data, error }) => {
+        if (!error) setPosts(data)
+      })
   }, [])
 
   // 検索＋ソート後の配列を作成
@@ -102,6 +104,7 @@ export default function Home() {
                 alt=""
                 style={{ width: '100%', height: 160, objectFit: 'cover' }}
               />
+              {/* 詳細ページへのリンク */}
               <Link href={`/posts/${post.id}`}>
                 <h2 style={{
                   fontSize: 18,
