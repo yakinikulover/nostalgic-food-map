@@ -10,45 +10,63 @@ const supabase = createClient(
 export default function CreatePost() {
   const router = useRouter()
   const [session, setSession] = useState(null)
+  const [stores, setStores] = useState([])
+  const [selectedStore, setSelectedStore] = useState('')
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
 
+  // セッション取得 & 店舗リスト取得
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) router.push('/')
       else setSession(session)
     })
+    supabase
+      .from('stores')
+      .select('id, name')
+      .order('name', { ascending: true })
+      .then(({ data, error }) => {
+        if (!error) setStores(data)
+      })
   }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!title || !file) return alert('タイトルと画像は必須です')
+    if (!title || !file || !selectedStore) {
+      alert('タイトル、店舗選択、画像は必須です')
+      return
+    }
     setLoading(true)
     try {
       // 画像アップロード
       const ext = file.name.split('.').pop()
       const fileName = `${Date.now()}.${ext}`
-      const { data: stored, error: err1 } = await supabase
-        .storage
-        .from('post-images')
-        .upload(fileName, file)
-      if (err1) throw err1
+      const { data: storageData, error: storageErr } =
+        await supabase.storage
+          .from('post-images')
+          .upload(fileName, file)
+      if (storageErr) throw storageErr
 
-      // 投稿レコード登録
-      const { data: post, error: err2 } = await supabase
+      // 投稿作成
+      const { data: post, error: postErr } = await supabase
         .from('posts')
-        .insert({ author_id: session.user.id, title, body })
+        .insert({
+          author_id: session.user.id,
+          store_id: selectedStore,
+          title,
+          body,
+        })
         .select('id')
         .single()
-      if (err2) throw err2
+      if (postErr) throw postErr
 
       // 画像テーブル登録
-      const { error: err3 } = await supabase
+      const { error: imgErr } = await supabase
         .from('post_images')
-        .insert({ post_id: post.id, image_url: stored.path })
-      if (err3) throw err3
+        .insert({ post_id: post.id, image_url: storageData.path })
+      if (imgErr) throw imgErr
 
       alert('投稿できました！')
       router.push('/')
@@ -65,17 +83,35 @@ export default function CreatePost() {
     <main style={{ padding: 20, maxWidth: 600, margin: 'auto' }}>
       <h1>新規投稿</h1>
       <form onSubmit={handleSubmit}>
-        <label>タイトル（必須）</label><br/>
-        <input
-          type="text" value={title}
-          onChange={e => setTitle(e.target.value)}
-          style={{ width: '100%', padding: 8 }}
-        />
+        <div>
+          <label>店舗を選択（必須）</label><br/>
+          <select
+            value={selectedStore}
+            onChange={(e) => setSelectedStore(e.target.value)}
+            style={{ width: '100%', padding: 8 }}
+          >
+            <option value="">-- 店舗を選んでください --</option>
+            {stores.map((store) => (
+              <option key={store.id} value={store.id}>
+                {store.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <label>タイトル（必須）</label><br/>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            style={{ width: '100%', padding: 8 }}
+          />
+        </div>
         <div style={{ marginTop: 12 }}>
           <label>本文</label><br/>
           <textarea
             value={body}
-            onChange={e => setBody(e.target.value)}
+            onChange={(e) => setBody(e.target.value)}
             rows={4}
             style={{ width: '100%', padding: 8 }}
           />
@@ -85,7 +121,7 @@ export default function CreatePost() {
           <input
             type="file"
             accept="image/*"
-            onChange={e => setFile(e.target.files[0])}
+            onChange={(e) => setFile(e.target.files[0])}
           />
         </div>
         <button
