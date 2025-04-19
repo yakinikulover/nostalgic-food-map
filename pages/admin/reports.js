@@ -1,3 +1,4 @@
+// pages/admin/reports.js
 import { createClient } from '@supabase/supabase-js'
 import { useEffect, useState } from 'react'
 
@@ -10,21 +11,19 @@ export default function ReportsAdmin() {
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // 通報一覧を取得
+  // シンプルに reports テーブルだけ取得（デバッグ用）
   useEffect(() => {
     supabase
       .from('reports')
-      .select(`
-        id,
-        reason,
-        resolved,
-        created_at,
-        post:posts(id, title),
-        reporter:users!reporter_id(id, email)
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
-        if (!error) setReports(data)
+        if (error) {
+          console.error('Fetch reports error:', error)
+        } else {
+          console.log('Fetched reports:', data)
+          setReports(data)
+        }
         setLoading(false)
       })
   }, [])
@@ -51,31 +50,34 @@ export default function ReportsAdmin() {
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
-            {['日時','投稿タイトル','通報者','理由','状態','操作'].map((h) => (
-              <th key={h} style={{
-                border: '1px solid #ddd',
-                padding: 8,
-                textAlign: 'left'
-              }}>{h}</th>
+            {['日時', '投稿ID', '通報者ID', '理由', '状態', '操作'].map((h) => (
+              <th
+                key={h}
+                style={{
+                  border: '1px solid #ddd',
+                  padding: 8,
+                  textAlign: 'left',
+                }}
+              >
+                {h}
+              </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {reports.map((r) => (
-            <tr key={r.id} style={{ background: r.resolved ? '#f9f9f9' : 'white' }}>
+            <tr
+              key={r.id}
+              style={{ background: r.resolved ? '#f9f9f9' : 'white' }}
+            >
               <td style={{ border: '1px solid #ddd', padding: 8 }}>
                 {new Date(r.created_at).toLocaleString()}
               </td>
               <td style={{ border: '1px solid #ddd', padding: 8 }}>
-                <a
-                  href={`/posts/${r.post.id}`}
-                  style={{ color: '#0070f3' }}
-                >
-                  {r.post.title}
-                </a>
+                {r.post_id}
               </td>
               <td style={{ border: '1px solid #ddd', padding: 8 }}>
-                {r.reporter.email}
+                {r.reporter_id}
               </td>
               <td style={{ border: '1px solid #ddd', padding: 8 }}>
                 {r.reason}
