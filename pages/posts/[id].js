@@ -20,7 +20,6 @@ export default function PostDetail() {
   const [reason, setReason] = useState('')
   const [reportLoading, setReportLoading] = useState(false)
   const [reported, setReported] = useState(false)
-
   // コメント機能用ステート
   const [comments, setComments] = useState([])
   const [newComment, setNewComment] = useState('')
@@ -91,8 +90,12 @@ export default function PostDetail() {
     try {
       await supabase
         .from('comments')
-        .insert({ post_id: id, author_id: session.user.id, content: newComment })
-      // 投稿後に再取得
+        .insert({
+          post_id: id,
+          author_id: session.user.id,
+          content: newComment,
+        })
+      // 投稿後に最新一覧を再取得
       const { data } = await supabase
         .from('comments')
         .select('id, content, created_at, author:users!author_id(id, name)')
@@ -102,7 +105,7 @@ export default function PostDetail() {
       setNewComment('')
     } catch (e) {
       console.error(e)
-      alert('コメントの投稿中にエラーが発生しました')
+      alert('コメント投稿中にエラーが発生しました')
     }
   }
 
@@ -135,12 +138,24 @@ export default function PostDetail() {
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
-            style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+            style={{
+              width: '100%',
+              padding: 8,
+              borderRadius: 4,
+              border: '1px solid #ccc',
+            }}
           />
           <button
             onClick={handleReport}
             disabled={!reason || reportLoading}
-            style={{ marginTop: 12, padding: '8px 16px', background: '#e00', color: '#fff', border: 'none', borderRadius: 4 }}
+            style={{
+              marginTop: 12,
+              padding: '8px 16px',
+              background: '#e00',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+            }}
           >
             {reportLoading ? '送信中…' : '通報する'}
           </button>
@@ -168,9 +183,26 @@ export default function PostDetail() {
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             rows={2}
-            style={{ width: '100%', marginTop: 8 }}
+            style={{
+              width: '100%',
+              marginTop: 8,
+              padding: 8,
+              borderRadius: 4,
+              border: '1px solid #ccc',
+            }}
           />
-          <button onClick={handleComment} disabled={!newComment} style={{ marginTop: 8, padding: '6px 12px', background: '#0070f3', color: '#fff', border: 'none', borderRadius: 4 }}>
+          <button
+            onClick={handleComment}
+            disabled={!newComment}
+            style={{
+              marginTop: 8,
+              padding: '8px 16px',
+              background: '#0070f3',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+            }}
+          >
             投稿
           </button>
         </div>
