@@ -20,28 +20,29 @@ export default function PostDetail() {
   const [reason, setReason] = useState('')
   const [reportLoading, setReportLoading] = useState(false)
   const [reported, setReported] = useState(false)
-  // コメント機能用ステート
+  // コメント機能用
   const [comments, setComments] = useState([])
   const [newComment, setNewComment] = useState('')
+  // いいね機能用
+  const [liked, setLiked] = useState(false)
+  const [likeCount, setLikeCount] = useState(0)
 
   // 投稿取得
   useEffect(() => {
     if (!id) return
-    const fetchPost = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('posts')
-          .select('id, title, body, created_at, post_images(image_url)')
-          .eq('id', id)
-          .single()
-        if (error) throw error
-        setPost(data)
-      } catch (e) {
-        console.error(e)
-        alert(`Error fetching post:\n${e.message}`)
-      }
-    }
-    fetchPost()
+    supabase
+      .from('posts')
+      .select('id, title, body, created_at, post_images(image_url)')
+      .eq('id', id)
+      .single()
+      .then(({ data, error }) => {
+        if (error) {
+          console.error(error)
+          alert(`Error fetching post:\n${error.message}`)
+        } else {
+          setPost(data)
+        }
+      })
   }, [id])
 
   // セッション取得
@@ -63,6 +64,32 @@ export default function PostDetail() {
         if (!error) setComments(data)
       })
   }, [id])
+
+  // 自分のいいね状態取得
+  useEffect(() => {
+    if (!id || !session) return
+    supabase
+      .from('likes')
+      .select('id')
+      .eq('post_id', id)
+      .eq('user_id', session.user.id)
+      .single()
+      .then(({ data }) => {
+        setLiked(!!data)
+      })
+  }, [id, session])
+
+  // いいね数取得
+  useEffect(() => {
+    if (!id) return
+    supabase
+      .from('likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('post_id', id)
+      .then(({ count }) => {
+        setLikeCount(count || 0)
+      })
+  }, [id, liked])
 
   if (!post) return <p>読み込み中…</p>
 
@@ -90,12 +117,8 @@ export default function PostDetail() {
     try {
       await supabase
         .from('comments')
-        .insert({
-          post_id: id,
-          author_id: session.user.id,
-          content: newComment,
-        })
-      // 投稿後に最新一覧を再取得
+        .insert({ post_id: id, author_id: session.user.id, content: newComment })
+      // 再取得
       const { data } = await supabase
         .from('comments')
         .select('id, content, created_at, author:users!author_id(id, name)')
@@ -109,6 +132,26 @@ export default function PostDetail() {
     }
   }
 
+  // いいね切り替え
+  const toggleLike = async () => {
+    if (!session) return
+    if (liked) {
+      await supabase
+        .from('likes')
+        .delete()
+        .eq('post_id', id)
+        .eq('user_id', session.user.id)
+      setLiked(false)
+      setLikeCount((c) => c - 1)
+    } else {
+      await supabase
+        .from('likes')
+        .insert({ post_id: id, user_id: session.user.id })
+      setLiked(true)
+      setLikeCount((c) => c + 1)
+    }
+  }
+
   return (
     <main style={{ padding: 20, maxWidth: 600, margin: 'auto' }}>
       <Link href="/">← 一覧へ戻る</Link>
@@ -118,6 +161,25 @@ export default function PostDetail() {
         {new Date(post.created_at).toLocaleDateString()}
       </p>
 
+      {/* いいねボタン */}
+      {session && (
+        <button
+          onClick={toggleLike}
+          style={{
+            marginTop: 8,
+            padding: '6px 12px',
+            background: 'transparent',
+            border: '1px solid #0070f3',
+            borderRadius: 4,
+            color: liked ? '#e00' : '#0070f3',
+            cursor: 'pointer',
+          }}
+        >
+          {liked ? '❤️ いいね済み' : '🤍 いいね'} ({likeCount})
+        </button>
+      )}
+
+      {/* 投稿画像 */}
       {post.post_images.map((img) => (
         <img
           key={img.image_url}
@@ -138,24 +200,12 @@ export default function PostDetail() {
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
-            style={{
-              width: '100%',
-              padding: 8,
-              borderRadius: 4,
-              border: '1px solid #ccc',
-            }}
+            style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
           />
           <button
             onClick={handleReport}
             disabled={!reason || reportLoading}
-            style={{
-              marginTop: 12,
-              padding: '8px 16px',
-              background: '#e00',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 4,
-            }}
+            style={{ marginTop: 12, padding: '8px 16px', background: '#e00', color: '#fff', border: 'none', borderRadius: 4 }}
           >
             {reportLoading ? '送信中…' : '通報する'}
           </button>
@@ -183,25 +233,12 @@ export default function PostDetail() {
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             rows={2}
-            style={{
-              width: '100%',
-              marginTop: 8,
-              padding: 8,
-              borderRadius: 4,
-              border: '1px solid #ccc',
-            }}
+            style={{ width: '100%', marginTop: 8, padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
           />
           <button
             onClick={handleComment}
             disabled={!newComment}
-            style={{
-              marginTop: 8,
-              padding: '8px 16px',
-              background: '#0070f3',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 4,
-            }}
+            style={{ marginTop: 8, padding: '8px 16px', background: '#0070f3', color: '#fff', border: 'none', borderRadius: 4 }}
           >
             投稿
           </button>
